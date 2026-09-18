@@ -148,3 +148,35 @@ class OmegaKernel:
             state.mode = payload["mode"]
         else:
             raise ValueError(f"Unsupported replay event: {event_type}")
+
+    def generate_chronicle(self, title: str = "World Evolution") -> dict[str, Any]:
+        """Generate a durable chronicle artifact from the current event stream."""
+        events = list(self.state.events)
+        diff_summary = self._event_diff_summary(events)
+        chronicle = {
+            "id": f"CHR-{len(events):04d}",
+            "type": "chronicle",
+            "title": title,
+            "world_id": self.state.world_id,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "summary": diff_summary["semantic_summary"],
+            "timeline": [
+                {"index": index, "type": event["type"], "timestamp": event["timestamp"]}
+                for index, event in enumerate(events, start=1)
+            ],
+            "major_decisions": [],
+            "contributors": ["runtime"],
+            "related_chapters": [],
+            "event_count": len(events),
+            "world_fingerprint": self.fingerprint(),
+        }
+        return chronicle
+
+    @staticmethod
+    def _event_diff_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
+        counts: dict[str, int] = {}
+        for event in events:
+            event_type = event["type"]
+            counts[event_type] = counts.get(event_type, 0) + 1
+        summary = ", ".join(f"{count} {kind}" for kind, count in sorted(counts.items()))
+        return {"semantic_summary": summary or "No recorded events."}
