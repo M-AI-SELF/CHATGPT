@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from runtime.omega import OmegaKernel
+from runtime.omega import OmegaKernel, WorldState
 
 
 def test_world_lifecycle() -> None:
@@ -40,4 +40,35 @@ def test_event_validation() -> None:
     with pytest.raises(ValueError):
         kernel.emit("", {})
     with pytest.raises(ValueError):
-        kernel.emit("Invalid", [])
+        kernel.emit("Invalid", [])  # type: ignore[arg-type]
+
+
+def test_checkpoint_restore_verifies_fingerprint(tmp_path: Path) -> None:
+    event_log = tmp_path / "events.jsonl"
+    source = OmegaKernel(event_log=event_log)
+    source.create_artifact("A-0001", "Seed", "hello")
+    checkpoint = source.checkpoint()
+    restored = OmegaKernel(event_log=event_log)
+    restored.restore_checkpoint(checkpoint)
+    assert restored.fingerprint() == checkpoint["fingerprint"]
+
+
+def test_checkpoint_restore_rejects_mismatch(tmp_path: Path) -> None:
+    event_log = tmp_path / "events.jsonl"
+    source = OmegaKernel(event_log=event_log)
+    source.create_artifact("A-0001", "Seed", "hello")
+    checkpoint = source.checkpoint()
+    checkpoint["fingerprint"] = "tampered"
+    restored = OmegaKernel(event_log=event_log)
+    with pytest.raises(ValueError, match="fingerprint"):
+        restored.restore_checkpoint(checkpoint)
+
+
+def test_cognitive_diff() -> None:
+    kernel = OmegaKernel()
+    before = WorldState(world_id="omega-world", artifacts={"A": {"id": "A", "content": "old"}})
+    after = WorldState(world_id="omega-world", artifacts={"A": {"id": "A", "content": "new"}, "B": {"id": "B", "content": "added"}})
+    diff = kernel.cognitive_diff(before, after)["cognitive_diff"]
+    assert diff["added"] == ["B"]
+    assert diff["changed"] == ["A"]
+    assert diff["removed"] == []
