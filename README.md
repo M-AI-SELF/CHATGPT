@@ -75,3 +75,20 @@ The initial kernel demonstrates:
 **Ω-0001 :: KERNEL BOOTSTRAP**
 
 The next implementation boundary is persistent event storage and deterministic World reconstruction.
+
+
+## Ω-0002 :: EVENT PERSISTENCE
+
+The Ω nucleus now supports an append-only event log and deterministic World reconstruction.
+
+```
+World → Artifact → Event → Event Log
+                         ↓
+                    Replay(Events)
+                         ↓
+                    World State
+```
+
+The bootstrap tests verify that a fresh Runtime instance can reconstruct the same World state from persisted events.
+
+**Verified contract:** Runtime instance is disposable; World state is reconstructable.
