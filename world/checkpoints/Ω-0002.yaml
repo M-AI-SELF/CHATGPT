@@ -1,0 +1,17 @@
+checkpoint:
+  id: Ω-0002
+  world: omega-world
+  chapter: genesis
+  artifact: Ω-SEED-0001
+  milestone: event-persistence-and-replay
+  status: active
+
+verified:
+  event_persistence: true
+  deterministic_replay: true
+  runtime_independent_restore: true
+
+next:
+  - persist checkpoint snapshots
+  - add cognitive diff
+  - verify artifact lineage
