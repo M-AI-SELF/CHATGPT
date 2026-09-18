@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -31,9 +32,17 @@ class OmegaKernel:
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "payload": payload,
         }
+        self._validate_event(event)
         self.state.events.append(event)
         self._persist_event(event)
         return event
+
+    @staticmethod
+    def _validate_event(event: dict[str, Any]) -> None:
+        if not event.get("type"):
+            raise ValueError("Event type is required.")
+        if not isinstance(event.get("payload"), dict):
+            raise ValueError("Event payload must be an object.")
 
     def _persist_event(self, event: dict[str, Any]) -> None:
         if self.event_log is None:
@@ -43,6 +52,8 @@ class OmegaKernel:
             handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
 
     def create_artifact(self, artifact_id: str, title: str, content: str, artifact_type: str = "text") -> dict[str, Any]:
+        if artifact_id in self.state.artifacts:
+            raise ValueError(f"Artifact already exists: {artifact_id}")
         artifact = {
             "id": artifact_id,
             "type": artifact_type,
@@ -61,7 +72,18 @@ class OmegaKernel:
             "mode": self.state.mode,
             "artifact_ids": sorted(self.state.artifacts),
             "event_count": len(self.state.events),
+            "fingerprint": self.fingerprint(),
         }
+
+    def fingerprint(self) -> str:
+        canonical = {
+            "world_id": self.state.world_id,
+            "status": self.state.status,
+            "mode": self.state.mode,
+            "artifacts": self.state.artifacts,
+        }
+        payload = json.dumps(canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     def restore(self, checkpoint: dict[str, Any]) -> None:
         if checkpoint["world_id"] != self.state.world_id:
@@ -72,6 +94,7 @@ class OmegaKernel:
     def replay(self, events: list[dict[str, Any]]) -> WorldState:
         rebuilt = WorldState(world_id=self.state.world_id)
         for event in events:
+            self._validate_event(event)
             self._apply_event(rebuilt, event)
         rebuilt.events = list(events)
         self.state = rebuilt
