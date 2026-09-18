@@ -1,0 +1,20 @@
+world:
+  id: omega-world
+  name: M-AI-SELF :: Ω Runtime
+  version: 0.1.0-alpha
+  status: active
+  chapter: genesis
+  chronicle: the-seed
+
+identity:
+  owner: user
+  sovereignty: true
+
+runtime:
+  contract: omega-runtime
+  replaceable: true
+
+storage:
+  artifacts: world/artifacts
+  events: world/events
+  checkpoints: world/checkpoints
