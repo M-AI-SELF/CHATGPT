@@ -45,3 +45,33 @@ World and implementation evolve in parallel. Every release becomes a new chapter
 Status: active bootstrap
 
 Current milestone: ARTIFACT_0000 :: THE SEED
+
+
+## Ω Repository Bootstrap
+
+The repository is now structured as the first executable Ω Runtime nucleus.
+
+```
+.anchor/                 Runtime identity and bootstrap manifest
+spec/                    World, Runtime, Artifact, Event, Checkpoint, Spellbook specs
+world/                   Canonical World manifest and checkpoints
+runtime/omega/           Minimal executable Ω Kernel
+tests/                   Kernel lifecycle verification
+pyproject.toml            Python 3.11+ project metadata
+```
+
+### Current executable proof
+
+The initial kernel demonstrates:
+
+1. World creation
+2. Artifact creation
+3. Event emission
+4. Checkpoint creation
+5. Checkpoint restoration
+
+### Current milestone
+
+**Ω-0001 :: KERNEL BOOTSTRAP**
+
+The next implementation boundary is persistent event storage and deterministic World reconstruction.
