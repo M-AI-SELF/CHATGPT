@@ -1,0 +1,10 @@
+project: M-AI-SELF :: Ω Runtime
+artifact: Ω-SEED-0001
+type: cognitive_operating_environment
+status: active
+version: 0.1.0-alpha
+codename: BOOTSTRAP
+source_of_truth: repository
+world_model: sovereign
+runtime: replaceable
+artifact_policy: immutable
