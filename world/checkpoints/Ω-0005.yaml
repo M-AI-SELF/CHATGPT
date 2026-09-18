@@ -1,0 +1,17 @@
+checkpoint:
+  id: Ω-0005
+  world: omega-world
+  chapter: genesis
+  artifact: Ω-SEED-0001
+  milestone: cognitive-diff
+  status: active
+
+verified:
+  checkpoint_restore: true
+  checkpoint_fingerprint_verification: true
+  cognitive_diff_added_changed_removed: true
+
+next:
+  - implement chronicle engine
+  - generate chronicle artifacts from verified events
+  - connect diff to chapter lifecycle
