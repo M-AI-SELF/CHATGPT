@@ -1,0 +1,28 @@
+checkpoint:
+  id: Ω-0001
+  world: omega-world
+  chapter: genesis
+  chronicle: the-seed
+  artifact: Ω-SEED-0001
+  runtime: omega
+  version: 0.1.0-alpha
+  status: active
+  mode: build
+
+cognitive_diff:
+  added:
+    - canonical seed artifact
+    - world manifest
+    - runtime specification
+    - artifact specification
+    - event specification
+    - checkpoint protocol
+    - spellbook specification
+  changed:
+    - repository promoted to canonical source of truth
+  removed: []
+
+next:
+  - implement executable kernel
+  - add event persistence
+  - add checkpoint restore verification
