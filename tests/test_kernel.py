@@ -72,3 +72,13 @@ def test_cognitive_diff() -> None:
     assert diff["added"] == ["B"]
     assert diff["changed"] == ["A"]
     assert diff["removed"] == []
+
+def test_chronicle_generation() -> None:
+    kernel = OmegaKernel()
+    kernel.create_artifact("A-0001", "Seed", "hello")
+    chronicle = kernel.generate_chronicle("Genesis Chronicle")
+    assert chronicle["type"] == "chronicle"
+    assert chronicle["title"] == "Genesis Chronicle"
+    assert chronicle["event_count"] == 1
+    assert chronicle["timeline"][0]["type"] == "ArtifactCreated"
+    assert chronicle["world_fingerprint"] == kernel.fingerprint()
