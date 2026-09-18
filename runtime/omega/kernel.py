@@ -1,4 +1,4 @@
-"""Executable Ω Kernel with persistent events and deterministic replay."""
+"""Executable Ω Kernel with persistence, deterministic reconstruction and checkpoints."""
 
 from __future__ import annotations
 
@@ -20,18 +20,12 @@ class WorldState:
 
 
 class OmegaKernel:
-    """Small, deterministic nucleus for World reconstruction."""
-
     def __init__(self, world_id: str = "omega-world", event_log: str | Path | None = None) -> None:
         self.event_log = Path(event_log) if event_log is not None else None
         self.state = WorldState(world_id=world_id)
 
     def emit(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
-        event = {
-            "type": event_type,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "payload": payload,
-        }
+        event = {"type": event_type, "timestamp": datetime.now(timezone.utc).isoformat(), "payload": payload}
         self._validate_event(event)
         self.state.events.append(event)
         self._persist_event(event)
@@ -54,13 +48,7 @@ class OmegaKernel:
     def create_artifact(self, artifact_id: str, title: str, content: str, artifact_type: str = "text") -> dict[str, Any]:
         if artifact_id in self.state.artifacts:
             raise ValueError(f"Artifact already exists: {artifact_id}")
-        artifact = {
-            "id": artifact_id,
-            "type": artifact_type,
-            "title": title,
-            "version": "1.0.0",
-            "content": content,
-        }
+        artifact = {"id": artifact_id, "type": artifact_type, "title": title, "version": "1.0.0", "content": content}
         self.state.artifacts[artifact_id] = artifact
         self.emit("ArtifactCreated", {"artifact": artifact})
         return artifact
@@ -75,12 +63,13 @@ class OmegaKernel:
             "fingerprint": self.fingerprint(),
         }
 
-    def fingerprint(self) -> str:
+    def fingerprint(self, state: WorldState | None = None) -> str:
+        target = state or self.state
         canonical = {
-            "world_id": self.state.world_id,
-            "status": self.state.status,
-            "mode": self.state.mode,
-            "artifacts": self.state.artifacts,
+            "world_id": target.world_id,
+            "status": target.status,
+            "mode": target.mode,
+            "artifacts": target.artifacts,
         }
         payload = json.dumps(canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
@@ -90,6 +79,8 @@ class OmegaKernel:
             raise ValueError("Checkpoint belongs to a different World.")
         self.state.status = checkpoint["status"]
         self.state.mode = checkpoint["mode"]
+        if checkpoint.get("fingerprint") and checkpoint["fingerprint"] != self.fingerprint():
+            raise ValueError("Checkpoint fingerprint does not match current World.")
 
     def replay(self, events: list[dict[str, Any]]) -> WorldState:
         rebuilt = WorldState(world_id=self.state.world_id)
@@ -109,6 +100,39 @@ class OmegaKernel:
     def restore_from_event_log(self) -> WorldState:
         return self.replay(self.load_events())
 
+    def restore_checkpoint(self, checkpoint: dict[str, Any], events: list[dict[str, Any]] | None = None) -> WorldState:
+        if checkpoint["world_id"] != self.state.world_id:
+            raise ValueError("Checkpoint belongs to a different World.")
+        source_events = self.load_events() if events is None else events
+        restored = self.replay(source_events)
+        if checkpoint.get("fingerprint") != self.fingerprint():
+            raise ValueError("Restored World fingerprint does not match checkpoint.")
+        self.state.status = checkpoint["status"]
+        self.state.mode = checkpoint["mode"]
+        return restored
+
+    def cognitive_diff(self, before: WorldState, after: WorldState) -> dict[str, Any]:
+        before_ids, after_ids = set(before.artifacts), set(after.artifacts)
+        added = sorted(after_ids - before_ids)
+        removed = sorted(before_ids - after_ids)
+        changed = sorted(
+            artifact_id for artifact_id in before_ids & after_ids
+            if before.artifacts[artifact_id] != after.artifacts[artifact_id]
+        )
+        return {
+            "cognitive_diff": {
+                "added": added,
+                "changed": changed,
+                "removed": removed,
+                "artifacts": {"added": added, "changed": changed, "removed": removed},
+                "decisions": [],
+                "goals": [],
+                "relationships": [],
+                "semantic_summary": f"{len(added)} added, {len(changed)} changed, {len(removed)} removed",
+                "next_objective": "inspect changed artifacts" if changed else "continue",
+            }
+        }
+
     @staticmethod
     def _apply_event(state: WorldState, event: dict[str, Any]) -> None:
         event_type = event["type"]
@@ -122,3 +146,5 @@ class OmegaKernel:
             state.status = payload["status"]
         elif event_type == "WorldModeChanged":
             state.mode = payload["mode"]
+        else:
+            raise ValueError(f"Unsupported replay event: {event_type}")
