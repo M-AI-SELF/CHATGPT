@@ -1,7 +1,11 @@
-"""Minimal executable Ω Kernel."""
+"""Executable Ω Kernel with persistent events and deterministic replay."""
 
+from __future__ import annotations
+
+import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 
@@ -15,9 +19,10 @@ class WorldState:
 
 
 class OmegaKernel:
-    """Minimal kernel proving the core lifecycle."""
+    """Small, deterministic nucleus for World reconstruction."""
 
-    def __init__(self, world_id: str = "omega-world") -> None:
+    def __init__(self, world_id: str = "omega-world", event_log: str | Path | None = None) -> None:
+        self.event_log = Path(event_log) if event_log is not None else None
         self.state = WorldState(world_id=world_id)
 
     def emit(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -27,11 +32,17 @@ class OmegaKernel:
             "payload": payload,
         }
         self.state.events.append(event)
+        self._persist_event(event)
         return event
 
-    def create_artifact(
-        self, artifact_id: str, title: str, content: str, artifact_type: str = "text"
-    ) -> dict[str, Any]:
+    def _persist_event(self, event: dict[str, Any]) -> None:
+        if self.event_log is None:
+            return
+        self.event_log.parent.mkdir(parents=True, exist_ok=True)
+        with self.event_log.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+
+    def create_artifact(self, artifact_id: str, title: str, content: str, artifact_type: str = "text") -> dict[str, Any]:
         artifact = {
             "id": artifact_id,
             "type": artifact_type,
@@ -40,7 +51,7 @@ class OmegaKernel:
             "content": content,
         }
         self.state.artifacts[artifact_id] = artifact
-        self.emit("ArtifactCreated", {"artifact_id": artifact_id})
+        self.emit("ArtifactCreated", {"artifact": artifact})
         return artifact
 
     def checkpoint(self) -> dict[str, Any]:
@@ -48,7 +59,7 @@ class OmegaKernel:
             "world_id": self.state.world_id,
             "status": self.state.status,
             "mode": self.state.mode,
-            "artifact_ids": list(self.state.artifacts),
+            "artifact_ids": sorted(self.state.artifacts),
             "event_count": len(self.state.events),
         }
 
@@ -57,3 +68,34 @@ class OmegaKernel:
             raise ValueError("Checkpoint belongs to a different World.")
         self.state.status = checkpoint["status"]
         self.state.mode = checkpoint["mode"]
+
+    def replay(self, events: list[dict[str, Any]]) -> WorldState:
+        rebuilt = WorldState(world_id=self.state.world_id)
+        for event in events:
+            self._apply_event(rebuilt, event)
+        rebuilt.events = list(events)
+        self.state = rebuilt
+        return rebuilt
+
+    def load_events(self) -> list[dict[str, Any]]:
+        if self.event_log is None or not self.event_log.exists():
+            return []
+        with self.event_log.open("r", encoding="utf-8") as handle:
+            return [json.loads(line) for line in handle if line.strip()]
+
+    def restore_from_event_log(self) -> WorldState:
+        return self.replay(self.load_events())
+
+    @staticmethod
+    def _apply_event(state: WorldState, event: dict[str, Any]) -> None:
+        event_type = event["type"]
+        payload = event["payload"]
+        if event_type == "ArtifactCreated":
+            artifact = payload["artifact"]
+            state.artifacts[artifact["id"]] = artifact
+        elif event_type == "ArtifactArchived":
+            state.artifacts.pop(payload["artifact_id"], None)
+        elif event_type == "WorldStatusChanged":
+            state.status = payload["status"]
+        elif event_type == "WorldModeChanged":
+            state.mode = payload["mode"]
