@@ -1,0 +1,27 @@
+checkpoint:
+  id: Ω-0008
+  world: omega-world
+  chapter: genesis
+  artifact: Ω-SEED-0001
+  milestone: dna-capsule-engine
+  status: active
+
+verified:
+  capsule_json_export: true
+  capsule_file_export: true
+  capsule_object_import: true
+  capsule_file_import: true
+  sha256_integrity_check: true
+  replay_fingerprint_verification: true
+  snapshot_consistency_check: true
+  atomic_import: true
+  detached_export_payload: true
+
+security_boundary:
+  digest: sha256
+  digital_signature: not_implemented
+
+next:
+  - implement artifact relationship graph
+  - validate artifact lineage
+  - include graph edges in capsule schema
