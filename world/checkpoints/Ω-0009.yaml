@@ -1,0 +1,23 @@
+checkpoint:
+  id: Ω-0009
+  world: omega-world
+  chapter: genesis
+  artifact: Ω-SEED-0001
+  milestone: artifact-graph-and-lineage
+  status: active
+
+verified:
+  relationship_vocabulary: true
+  endpoint_validation: true
+  lineage_cycle_validation: true
+  idempotent_relationships: true
+  event_sourced_relationships: true
+  graph_fingerprint: true
+  lineage_traversal: true
+  relationship_aware_cognitive_diff: true
+  capsule_graph_round_trip: true
+
+next:
+  - define capability descriptor schema
+  - implement capability registry
+  - resolve runtime capabilities by requirement
