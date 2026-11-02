@@ -219,3 +219,18 @@ See `spec/CAPSULE_SPECIFICATION.md` and `docs/Ω-0008_DNA_CAPSULE_ENGINE.md` for
 Artifacts now support typed, event-sourced relationships. The Runtime validates endpoints and lineage cycles, computes a canonical graph fingerprint, traverses ancestry, and includes relationship changes in Cognitive Diff. DNA Capsule schema v2 carries graph edges while retaining v1 import compatibility.
 
 See `spec/ARTIFACT_GRAPH_SPECIFICATION.md` and `docs/Ω-0009_ARTIFACT_GRAPH_LINEAGE.md`.
+
+
+## Ω Command Center :: Dashboard
+
+A local-first, read-only dashboard renders the canonical World from the event log. It includes the World overview, artifact constellation, lineage counts, continuity health, recent Chronicle events and a Capability Registry surface reserved for the Ω-0010 integration.
+
+Run it from the repository root:
+
+```bash
+python -m runtime.omega.dashboard
+```
+
+Then open [http://127.0.0.1:8765](http://127.0.0.1:8765). The dashboard polls the overview API every 15 seconds. If the API is not running, the page displays a clearly labelled preview. It does not mutate World state.
+
+See `docs/DASHBOARD_SPECIFICATION.md`.
