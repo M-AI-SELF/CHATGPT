@@ -228,6 +228,8 @@ class OmegaKernel:
             "events": self.state.events,
             "checkpoint": self.checkpoint(),
         }
+        # Detach exported payload from live in-memory World objects.
+        capsule = json.loads(json.dumps(capsule, ensure_ascii=False))
         digest = hashlib.sha256(self._canonical_json(capsule).encode("utf-8")).hexdigest()
         capsule["integrity"] = {"algorithm": "sha256", "digest": digest}
         if destination is not None:
