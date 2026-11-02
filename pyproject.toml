@@ -11,3 +11,6 @@ dependencies = []
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+
+[project.scripts]
+omega-dashboard = "runtime.omega.dashboard:main"
