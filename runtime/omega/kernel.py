@@ -263,7 +263,10 @@ class OmegaKernel:
 
     def validate_artifact_graph(self) -> dict[str, Any]:
         self._validate_relationship_graph(self.state.artifacts, self.state.relationships)
-        canonical = self._canonical_json({"artifacts": self.state.artifacts, "relationships": self.state.relationships})
+        canonical = self._canonical_json({
+            "artifacts": self.state.artifacts,
+            "relationships": sorted(self.state.relationships, key=lambda edge: (edge["source"], edge["type"], edge["target"])),
+        })
         graph_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
         return {"valid": True, "artifact_count": len(self.state.artifacts), "relationship_count": len(self.state.relationships), "fingerprint": graph_hash}
 
@@ -289,7 +292,7 @@ class OmegaKernel:
         """Create a portable, integrity-checked snapshot of this World."""
         capsule = {
             "format": "m-ai-self-dna-capsule",
-            "schema_version": 1,
+            "schema_version": 2,
             "manifest": {
                 "world_id": self.state.world_id,
                 "exported_at": datetime.now(timezone.utc).isoformat(),
@@ -326,7 +329,8 @@ class OmegaKernel:
             capsule = json.loads(json.dumps(source, ensure_ascii=False))
         if capsule.get("format") != "m-ai-self-dna-capsule":
             raise ValueError("Unsupported capsule format.")
-        if capsule.get("schema_version") != 1:
+        schema_version = capsule.get("schema_version")
+        if schema_version not in {1, 2}:
             raise ValueError("Unsupported capsule schema version.")
         integrity = capsule.get("integrity", {})
         if integrity.get("algorithm") != "sha256":
@@ -342,10 +346,15 @@ class OmegaKernel:
         candidate = OmegaKernel(world_id=world_id, identity=dict(capsule.get("identity", {})))
         restored = candidate.replay(capsule.get("events", []))
         expected = manifest.get("fingerprint")
-        if not expected or candidate.fingerprint() != expected:
+        if schema_version == 1:
+            legacy_state = {"world_id": candidate.state.world_id, "status": candidate.state.status, "mode": candidate.state.mode, "artifacts": candidate.state.artifacts, "chapters": candidate.state.chapters}
+            reconstructed_fingerprint = hashlib.sha256(self._canonical_json(legacy_state).encode("utf-8")).hexdigest()
+        else:
+            reconstructed_fingerprint = candidate.fingerprint()
+        if not expected or reconstructed_fingerprint != expected:
             raise ValueError("Capsule World fingerprint verification failed.")
         checkpoint = capsule.get("checkpoint", {})
-        if checkpoint.get("fingerprint") != candidate.fingerprint():
+        if checkpoint.get("fingerprint") != reconstructed_fingerprint:
             raise ValueError("Capsule checkpoint does not match reconstructed World.")
         world_snapshot = capsule.get("world", {})
         if world_snapshot.get("artifacts") != candidate.state.artifacts or world_snapshot.get("chapters") != candidate.state.chapters or world_snapshot.get("relationships", []) != candidate.state.relationships:
