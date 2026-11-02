@@ -205,3 +205,10 @@ Licensing is not yet declared in this repository. A code license and a separate 
 The runtime now groups goals, Artifacts, Chronicles, Checkpoint snapshots and release notes into event-sourced Chapters. Chapters move from `open` to `published`; published Chapters reject further Artifact attachment. A fresh Runtime can reconstruct Chapter state by replaying the event log.
 
 See `docs/Ω-0007_CHAPTER_ENGINE.md` for lifecycle and swimlane diagrams.
+
+
+## Ω-0008 :: DNA CAPSULE ENGINE
+
+Worlds can now be exported as portable JSON DNA Capsules and imported into a fresh Runtime. Capsules include identity metadata, World snapshots, Artifacts, Chapters, ordered Events and a Checkpoint. Import verifies the SHA-256 digest, replays the event history, checks the reconstructed fingerprint and commits state only after all validation gates pass.
+
+See `spec/CAPSULE_SPECIFICATION.md` and `docs/Ω-0008_DNA_CAPSULE_ENGINE.md` for the format contract and export/import swimlane. SHA-256 provides integrity checking, not digital-signature authentication.
