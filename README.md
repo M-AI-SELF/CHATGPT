@@ -198,3 +198,10 @@ Licensing is not yet declared in this repository. A code license and a separate 
 
 **M-AI-SELF :: Ω Runtime**  
 *Building Worlds instead of Conversations.*
+
+
+## Ω-0007 :: CHAPTER ENGINE
+
+The runtime now groups goals, Artifacts, Chronicles, Checkpoint snapshots and release notes into event-sourced Chapters. Chapters move from `open` to `published`; published Chapters reject further Artifact attachment. A fresh Runtime can reconstruct Chapter state by replaying the event log.
+
+See `docs/Ω-0007_CHAPTER_ENGINE.md` for lifecycle and swimlane diagrams.
