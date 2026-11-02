@@ -79,7 +79,7 @@ def build_overview(event_log: str | Path = DEFAULT_EVENT_LOG, world_id: str = "o
         "relationships": list(state.relationships),
         "chapters": [{"id": item["id"], "title": item.get("title", item["id"]), "status": item.get("status", "open")} for item in state.chapters.values()],
         "events": recent_events,
-        "capabilities": [],
+        "capabilities": kernel.capabilities.describe(),
         "checkpoint": {"available": bool(checkpoint_files)},
         "error": error,
         "generated_at": datetime.now(timezone.utc).isoformat(),
