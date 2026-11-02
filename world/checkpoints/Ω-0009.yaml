@@ -4,6 +4,8 @@ checkpoint:
   chapter: genesis
   artifact: Ω-SEED-0001
   milestone: artifact-graph-and-lineage
+  capsule_schema: 2
+  legacy_capsule_import: v1
   status: active
 
 verified:
