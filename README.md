@@ -1,94 +1,200 @@
 # M-AI-SELF :: Ω Runtime
 
-M-AI-SELF is a modular Cognitive Operating Environment built around persistent sovereign Worlds rather than isolated conversations.
+> **The World belongs to the user.**  
+> **The Runtime is replaceable.**  
+> **The Artifacts endure.**
 
-The project combines human intent, AI reasoning, memory, artifacts, chronicles, and local perception into a single evolving runtime.
+**A Personal Cognitive Operating Environment**  
+*Artifact-driven · Runtime-agnostic · Local-first · Sovereign by design*
 
-## Core principles
+---
 
-- Everything is an Artifact.
-- Artifacts form Chapters.
-- Chapters form Chronicles.
-- Chronicles describe Worlds.
-- Worlds connect through the Forest Protocol while remaining sovereign.
-- The repository is the source of truth.
-- Documentation, graphics, PDFs, websites, and social outputs are all renderers of the same canonical Artifact.
+## What is M-AI-SELF?
 
-## Architecture
+M-AI-SELF is an open, modular Cognitive Operating Environment for creating, preserving, reconstructing, and evolving persistent cognitive Worlds.
 
-- **M**: Human cognition, intent, identity.
-- **AI**: Reasoning, planning, execution, automation.
-- **SELF**: The emergent cognitive layer created by continuous interaction between human and AI.
-- **Ω Runtime**: The cognitive kernel that restores context, synchronizes state, and orchestrates execution.
+It is not designed around isolated prompts or conversations. Its primary unit is the **World**: a durable environment containing identity, intent, knowledge, artifacts, decisions, history, capabilities, and runtime state.
 
-## Key concepts
+The project separates the World from the software used to operate it:
 
-- Artifact Model
-- Chapter System
-- Chronicle Engine
-- DNA Capsules
-- World Snapshots
-- World Identity
-- Embryo
-- Forest Protocol
-- Tavern
-- Living Atlas
-- Renderer Pipeline
-- Spellbooks
+- **World** — the portable, canonical semantic state owned by its creator.
+- **Ω Runtime** — an interchangeable implementation that interprets and operates on a World.
+- **Artifacts** — durable, versioned objects representing meaningful work and knowledge.
+- **Events** — the append-only record of changes from which state can be reconstructed.
 
-## Development philosophy
+The long-term goal is an open World Specification that lets different AI systems reconstruct and continue a World according to their actual capabilities.
 
-World and implementation evolve in parallel. Every release becomes a new chapter in the Chronicle.
+## The M / AI / SELF model
 
-## Project status
+| Layer | Meaning |
+|---|---|
+| **M** | Human intent, identity, values, experience, purpose, and direction. |
+| **AI** | Reasoning, planning, knowledge processing, execution, and tool orchestration. |
+| **SELF** | The emergent, persistent cognitive environment formed through continuous human–AI collaboration. |
 
-Status: active bootstrap
+The system should augment human cognition, not replace human agency or ownership.
 
-Current milestone: ARTIFACT_0000 :: THE SEED
+## Core philosophy
 
+Everything meaningful becomes an **Artifact**.
 
-## Ω Repository Bootstrap
+Artifacts are organized into **Chapters**. Chapters contribute to **Chronicles**. Chronicles describe the evolution of a **World**. Worlds may connect through the **Forest Protocol** while retaining sovereignty.
 
-The repository is now structured as the first executable Ω Runtime nucleus.
+**One canonical source → many renderers.**
 
-```
-.anchor/                 Runtime identity and bootstrap manifest
-spec/                    World, Runtime, Artifact, Event, Checkpoint, Spellbook specs
-world/                   Canonical World manifest and checkpoints
-runtime/omega/           Minimal executable Ω Kernel
-tests/                   Kernel lifecycle verification
-pyproject.toml            Python 3.11+ project metadata
-```
+README files, websites, PDFs, graphics, timelines, manga-style chronicles, presentations, and social publications are derived views of canonical project artifacts. They are not competing sources of truth.
 
-### Current executable proof
+## Architecture at a glance
 
-The initial kernel demonstrates:
-
-1. World creation
-2. Artifact creation
-3. Event emission
-4. Checkpoint creation
-5. Checkpoint restoration
-
-### Current milestone
-
-**Ω-0001 :: KERNEL BOOTSTRAP**
-
-The next implementation boundary is persistent event storage and deterministic World reconstruction.
-
-
-## Ω-0002 :: EVENT PERSISTENCE
-
-The Ω nucleus now supports an append-only event log and deterministic World reconstruction.
-
-```
-World → Artifact → Event → Event Log
-                         ↓
-                    Replay(Events)
-                         ↓
-                    World State
+```text
+Human (M)
+   │ intent, identity, values
+   ▼
+AI
+   │ reasoning, planning, execution
+   ▼
+SELF
+   │ persistent cognitive continuity
+   ▼
+Ω Runtime
+   ├── World / Identity
+   ├── Context & Memory
+   ├── Artifact Knowledge Graph
+   ├── Event Log & State Reconstruction
+   ├── Planner & Capability Registry
+   ├── Checkpoint Manager
+   ├── Chronicle Engine
+   ├── Spellbook Executor
+   ├── Plugin / Agent Orchestration
+   └── Renderer Pipeline
+          │
+          ▼
+     Sovereign World
+          │ optional connection
+          ▼
+     Forest Protocol
 ```
 
-The bootstrap tests verify that a fresh Runtime instance can reconstruct the same World state from persisted events.
+## Core modules and concepts
 
-**Verified contract:** Runtime instance is disposable; World state is reconstructable.
+- **Ω Runtime** — cognitive kernel and execution environment.
+- **World Model** — identity, goals, knowledge, artifacts, events, capabilities, and state.
+- **Artifact Model** — immutable, versioned cognitive objects with semantic relationships.
+- **Chapter System** — groups artifacts into meaningful evolutionary milestones.
+- **Chronicle Engine** — turns event history into an intelligible narrative of the World's evolution.
+- **Checkpoint Manager** — records validated recovery and continuity points.
+- **World Snapshots / DNA Capsules** — portable, versioned snapshots for restore, migration, and sharing.
+- **Spellbooks** — declarative, reusable semantic workflows that restore or transform context and state.
+- **Embryo** — optional local perception layer that converts explicitly permitted device signals into semantic events; privacy and user control are foundational.
+- **Forest Protocol** — interoperability and voluntary exchange between sovereign Worlds.
+- **Tavern / Living Atlas** — proposed social spaces and discovery interfaces for connected Worlds.
+- **Renderer Pipeline** — derives documentation, visual, web, PDF, and publication outputs from canonical Artifacts.
+- **Multi-Agent Mesh** — agents with different capabilities collaborate through shared, inspectable World artifacts and events.
+
+These names describe the intended architecture. A module is not considered implemented merely because it appears in this overview; see the implementation status below.
+
+## Implemented foundation
+
+The repository already contains an initial executable Ω Runtime nucleus.
+
+The current README history and repository files record these verified milestones:
+
+1. World creation.
+2. Artifact creation.
+3. Event emission.
+4. Checkpoint creation.
+5. Checkpoint restoration.
+6. Append-only event persistence.
+7. Deterministic World reconstruction by replaying persisted events.
+
+**Current verified boundary:** a Runtime instance can be disposable while World state is reconstructed from persisted events.
+
+This is an early executable foundation, not yet the complete Cognitive Operating Environment or a production-ready distributed network.
+
+## Development status
+
+| Area | Status |
+|---|---|
+| Repository bootstrap | Existing |
+| Minimal executable Ω Kernel | Existing |
+| Event persistence and replay | Existing milestone |
+| World Specification | Draft / evolving |
+| Full Artifact Knowledge Graph | Planned |
+| Chronicle Engine | Planned |
+| DNA Capsule interoperability | Planned |
+| Spellbook execution | Planned |
+| Embryo local perception | Concept / planned |
+| Forest Protocol networking | Concept / planned |
+| Living Atlas and Tavern | Concept / planned |
+| Multi-agent orchestration | Planned |
+
+Status labels distinguish **implemented**, **specified**, **prototype**, and **planned** work. No conceptual module should be represented as production-ready without tests and evidence.
+
+## Repository map
+
+```text
+.anchor/          Runtime identity and bootstrap manifest
+spec/             World, Runtime, Artifact, Event and workflow specifications
+world/            Canonical World manifest, artifacts, events and checkpoints
+runtime/omega/    Executable Ω Kernel
+tests/            Runtime and lifecycle verification
+docs/             Project overview and design documentation
+assets/           Visual assets and diagrams
+```
+
+The repository is the canonical project record. Documentation should evolve alongside implementation.
+
+## Development principles
+
+1. **Sovereignty** — the creator owns the World and controls its data.
+2. **Artifact-first** — meaningful work is represented by durable artifacts.
+3. **Event sourcing** — changes are recorded; state is reconstructed from history.
+4. **Continuity** — checkpoints and capsules support recovery and migration.
+5. **Runtime independence** — no single model or provider owns the World.
+6. **Local-first privacy** — sensitive signals remain local unless explicitly shared.
+7. **Validation before mutation** — validate changes and preserve rollback paths.
+8. **Capability honesty** — runtimes declare what they can and cannot reconstruct.
+9. **One source of truth** — renderers derive outputs from canonical artifacts.
+10. **Evolution with lineage** — every meaningful milestone is traceable.
+
+## Roadmap
+
+The initial foundation sequence is:
+
+1. Repository identity and project overview.
+2. World Specification.
+3. Ω Runtime Specification.
+4. Artifact Specification.
+5. Chapter System.
+6. Chronicle Engine.
+7. Forest Protocol.
+8. DNA Capsules and restoration.
+9. Spellbooks.
+10. Repository and renderer integration.
+
+Implementation proceeds incrementally. Each milestone should have an artifact, tests where applicable, a checkpoint, and a Chronicle entry.
+
+## Getting started
+
+The project targets **Python 3.11+**. The runtime package and its actual commands are defined by the repository's `pyproject.toml` and source tree.
+
+For the current architecture and contracts, begin with:
+
+- [Project overview](docs/PROJECT_OVERVIEW.md)
+- [World manifest](world/manifest.yaml)
+- [Specifications](spec/)
+- [Runtime implementation](runtime/omega/)
+- [Tests](tests/)
+
+## Collaboration
+
+Contributions should preserve the World model, document architectural decisions, include validation, and clearly label implementation maturity. See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+## License
+
+Licensing is not yet declared in this repository. A code license and a separate documentation/specification license should be selected before external reuse is invited.
+
+---
+
+**M-AI-SELF :: Ω Runtime**  
+*Building Worlds instead of Conversations.*
