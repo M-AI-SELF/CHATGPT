@@ -1,0 +1,20 @@
+checkpoint:
+  id: Ω-0007
+  world: omega-world
+  chapter: genesis
+  artifact: Ω-SEED-0001
+  milestone: chapter-engine
+  status: active
+
+verified:
+  chapter_creation: true
+  artifact_binding: true
+  chronicle_binding: true
+  checkpoint_snapshot: true
+  chapter_publication: true
+  event_replay: true
+
+next:
+  - define portable capsule manifest
+  - serialize World identity, artifacts, chapters, chronicles and events
+  - verify capsule integrity on import
