@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -109,3 +110,43 @@ def test_published_chapter_is_immutable() -> None:
     kernel.publish_chapter("CH-1")
     with pytest.raises(ValueError):
         kernel.attach_artifact_to_chapter("CH-1", "A-1")
+
+
+def test_capsule_round_trip_preserves_world(tmp_path: Path) -> None:
+    source = OmegaKernel(identity={"owner": "creator", "sovereignty": True})
+    source.create_artifact("A-CAP", "Capsule Artifact", "portable content")
+    source.create_chapter("CH-CAP", "Capsule Chapter", ["Preserve continuity"])
+    source.attach_artifact_to_chapter("CH-CAP", "A-CAP")
+    source.publish_chapter("CH-CAP", ["Capsule release"])
+    expected_fingerprint = source.fingerprint()
+    capsule_path = tmp_path / "world.dna.json"
+    capsule = source.export_capsule(capsule_path)
+    target = OmegaKernel(world_id="temporary-world")
+    target.import_capsule(capsule_path)
+    assert target.state.world_id == "omega-world"
+    assert target.fingerprint() == expected_fingerprint
+    assert target.identity == {"owner": "creator", "sovereignty": True}
+    assert target.state.chapters["CH-CAP"]["status"] == "published"
+
+
+def test_capsule_rejects_tampering() -> None:
+    source = OmegaKernel()
+    source.create_artifact("A-TAMPER", "Original", "safe")
+    capsule = source.export_capsule()
+    capsule["world"]["artifacts"]["A-TAMPER"]["content"] = "tampered"
+    target = OmegaKernel()
+    with pytest.raises(ValueError, match="integrity"):
+        target.import_capsule(capsule)
+
+
+def test_capsule_rejects_unsupported_schema() -> None:
+    source = OmegaKernel()
+    capsule = source.export_capsule()
+    capsule["schema_version"] = 99
+    unsigned = {key: value for key, value in capsule.items() if key != "integrity"}
+    capsule["integrity"]["digest"] = __import__("hashlib").sha256(
+        json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    target = OmegaKernel()
+    with pytest.raises(ValueError, match="schema version"):
+        target.import_capsule(capsule)
