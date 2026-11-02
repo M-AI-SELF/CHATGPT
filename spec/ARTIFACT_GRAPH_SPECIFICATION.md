@@ -37,7 +37,7 @@ target: ARTIFACT_ID
 
 ## Capsule integration
 
-DNA Capsule v1 snapshots include `world.relationships`. Import verifies that this graph snapshot exactly matches the graph reconstructed from the event stream before committing the candidate World.
+DNA Capsule schema v2 snapshots include `world.relationships`. Import verifies that this graph snapshot exactly matches the graph reconstructed from the event stream before committing the candidate World.
 
 ## Cognitive Diff
 
