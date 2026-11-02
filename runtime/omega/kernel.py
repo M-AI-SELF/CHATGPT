@@ -126,6 +126,12 @@ class OmegaKernel:
             artifact_id for artifact_id in before_ids & after_ids
             if before.artifacts[artifact_id] != after.artifacts[artifact_id]
         )
+        before_edges = {tuple(sorted(edge.items())) for edge in before.relationships}
+        after_edges = {tuple(sorted(edge.items())) for edge in after.relationships}
+        relationship_diff = {
+            "added": [dict(edge) for edge in sorted(after_edges - before_edges)],
+            "removed": [dict(edge) for edge in sorted(before_edges - after_edges)],
+        }
         return {
             "cognitive_diff": {
                 "added": added,
@@ -134,7 +140,7 @@ class OmegaKernel:
                 "artifacts": {"added": added, "changed": changed, "removed": removed},
                 "decisions": [],
                 "goals": [],
-                "relationships": [],
+                "relationships": relationship_diff,
                 "semantic_summary": f"{len(added)} added, {len(changed)} changed, {len(removed)} removed",
                 "next_objective": "inspect changed artifacts" if changed else "continue",
             }
