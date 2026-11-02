@@ -17,6 +17,7 @@ class WorldState:
     mode: str = "build"
     artifacts: dict[str, dict[str, Any]] = field(default_factory=dict)
     chapters: dict[str, dict[str, Any]] = field(default_factory=dict)
+    relationships: list[dict[str, str]] = field(default_factory=list)
     events: list[dict[str, Any]] = field(default_factory=list)
 
 
@@ -75,6 +76,7 @@ class OmegaKernel:
             "mode": target.mode,
             "artifacts": target.artifacts,
             "chapters": target.chapters,
+            "relationships": sorted(target.relationships, key=lambda edge: (edge["source"], edge["type"], edge["target"])),
         }
         payload = json.dumps(canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
@@ -151,6 +153,9 @@ class OmegaKernel:
             state.status = payload["status"]
         elif event_type == "WorldModeChanged":
             state.mode = payload["mode"]
+        elif event_type == "ArtifactRelationshipCreated":
+            relationship = payload["relationship"]
+            state.relationships.append(relationship)
         elif event_type == "ChapterCreated":
             chapter = payload["chapter"]
             state.chapters[chapter["id"]] = chapter
@@ -203,6 +208,74 @@ class OmegaKernel:
         chapter["release_notes"] = notes
         return chapter
     @staticmethod
+    RELATIONSHIP_TYPES = {
+        "references", "depends_on", "extends", "implements", "belongs_to",
+        "derived_from", "generated_by", "duplicates", "contradicts",
+        "supports", "explains",
+    }
+    ACYCLIC_RELATIONSHIP_TYPES = {"derived_from", "depends_on", "extends"}
+
+    def add_artifact_relationship(self, source_id: str, relationship_type: str, target_id: str) -> dict[str, str]:
+        if relationship_type not in self.RELATIONSHIP_TYPES:
+            raise ValueError(f"Unsupported relationship type: {relationship_type}")
+        if source_id not in self.state.artifacts or target_id not in self.state.artifacts:
+            raise KeyError("Both relationship endpoints must exist in the World.")
+        edge = {"source": source_id, "type": relationship_type, "target": target_id}
+        if edge in self.state.relationships:
+            return edge
+        candidate_edges = [*self.state.relationships, edge]
+        self._validate_relationship_graph(self.state.artifacts, candidate_edges)
+        self.state.relationships.append(edge)
+        self.emit("ArtifactRelationshipCreated", {"relationship": edge})
+        return edge
+
+    @classmethod
+    def _validate_relationship_graph(cls, artifacts: dict[str, Any], relationships: list[dict[str, str]]) -> None:
+        adjacency: dict[str, list[str]] = {}
+        for edge in relationships:
+            source, target, relation = edge.get("source"), edge.get("target"), edge.get("type")
+            if source not in artifacts or target not in artifacts:
+                raise ValueError("Artifact graph contains a dangling reference.")
+            if relation not in cls.RELATIONSHIP_TYPES:
+                raise ValueError(f"Unsupported relationship type: {relation}")
+            if relation in cls.ACYCLIC_RELATIONSHIP_TYPES:
+                adjacency.setdefault(source, []).append(target)
+        visiting: set[str] = set()
+        visited: set[str] = set()
+        def visit(node: str) -> None:
+            if node in visiting:
+                raise ValueError("Artifact lineage contains a cycle.")
+            if node in visited:
+                return
+            visiting.add(node)
+            for neighbor in adjacency.get(node, []):
+                visit(neighbor)
+            visiting.remove(node)
+            visited.add(node)
+        for artifact_id in artifacts:
+            visit(artifact_id)
+
+    def validate_artifact_graph(self) -> dict[str, Any]:
+        self._validate_relationship_graph(self.state.artifacts, self.state.relationships)
+        canonical = self._canonical_json({"artifacts": self.state.artifacts, "relationships": self.state.relationships})
+        graph_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        return {"valid": True, "artifact_count": len(self.state.artifacts), "relationship_count": len(self.state.relationships), "fingerprint": graph_hash}
+
+    def artifact_lineage(self, artifact_id: str) -> dict[str, Any]:
+        if artifact_id not in self.state.artifacts:
+            raise KeyError(f"Unknown Artifact: {artifact_id}")
+        incoming = [edge for edge in self.state.relationships if edge["target"] == artifact_id and edge["type"] in self.ACYCLIC_RELATIONSHIP_TYPES]
+        seen: set[str] = set()
+        ordered: list[str] = []
+        def walk(current: str) -> None:
+            for edge in incoming:
+                if edge["target"] != current or edge["source"] in seen:
+                    continue
+                seen.add(edge["source"])
+                ordered.append(edge["source"])
+                walk(edge["source"])
+        walk(artifact_id)
+        return {"artifact_id": artifact_id, "ancestors": ordered, "relationships": [edge for edge in self.state.relationships if edge["source"] == artifact_id or edge["target"] == artifact_id]}
     def _canonical_json(value: dict[str, Any]) -> str:
         return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
@@ -224,6 +297,7 @@ class OmegaKernel:
                 "mode": self.state.mode,
                 "artifacts": self.state.artifacts,
                 "chapters": self.state.chapters,
+                "relationships": self.state.relationships,
             },
             "events": self.state.events,
             "checkpoint": self.checkpoint(),
@@ -268,7 +342,7 @@ class OmegaKernel:
         if checkpoint.get("fingerprint") != candidate.fingerprint():
             raise ValueError("Capsule checkpoint does not match reconstructed World.")
         world_snapshot = capsule.get("world", {})
-        if world_snapshot.get("artifacts") != candidate.state.artifacts or world_snapshot.get("chapters") != candidate.state.chapters:
+        if world_snapshot.get("artifacts") != candidate.state.artifacts or world_snapshot.get("chapters") != candidate.state.chapters or world_snapshot.get("relationships", []) != candidate.state.relationships:
             raise ValueError("Capsule snapshot does not match replayed event history.")
         if world_snapshot.get("status") != candidate.state.status or world_snapshot.get("mode") != candidate.state.mode:
             raise ValueError("Capsule World metadata does not match replayed event history.")
