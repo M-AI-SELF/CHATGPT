@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .capabilities import CapabilityDescriptor, CapabilityRegistry
+
 
 @dataclass
 class WorldState:
@@ -26,6 +28,15 @@ class OmegaKernel:
         self.event_log = Path(event_log) if event_log is not None else None
         self.identity = dict(identity or {"owner": "user", "sovereignty": True})
         self.state = WorldState(world_id=world_id)
+        self.capabilities = CapabilityRegistry()
+        for descriptor in (
+            CapabilityDescriptor("world.replay", description="Reconstruct World state from ordered events.", provider="omega.kernel", permissions=("world.read",), trust_level="trusted"),
+            CapabilityDescriptor("artifact.graph.validate", description="Validate artifact graph endpoints and lineage.", provider="omega.kernel", permissions=("world.read",), trust_level="trusted"),
+            CapabilityDescriptor("checkpoint.create", description="Create a deterministic World checkpoint.", provider="omega.kernel", permissions=("world.read",), trust_level="trusted"),
+            CapabilityDescriptor("capsule.export", description="Export an integrity-checked DNA Capsule.", provider="omega.kernel", permissions=("world.read", "capsule.export"), trust_level="trusted"),
+            CapabilityDescriptor("capsule.import", description="Validate and import a DNA Capsule.", provider="omega.kernel", permissions=("world.write", "capsule.import"), trust_level="trusted"),
+        ):
+            self.capabilities.register(descriptor)
 
     def emit(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         # Freeze payload at emission time so later in-memory mutations cannot rewrite history.
