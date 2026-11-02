@@ -19,7 +19,7 @@ World Event Log → Ω Kernel Replay → Dashboard Overview API → Browser Rend
 - Artifact constellation rendered from actual graph nodes and edges.
 - Event Chronicle stream.
 - Event replay, graph integrity and checkpoint availability indicators.
-- Capability Registry placeholder, connected in Ω-0010.
+- Runtime Capability Registry descriptors and provider trust/permission metadata.
 - Automatic refresh every 15 seconds and manual refresh.
 - Preview mode when opened without the local API.
 
