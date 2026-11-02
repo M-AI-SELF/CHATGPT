@@ -267,3 +267,15 @@ def test_capsule_v1_remains_importable() -> None:
     target = OmegaKernel()
     target.import_capsule(capsule)
     assert target.state.artifacts == source.state.artifacts
+
+
+def test_replay_rejects_invalid_lineage_cycle() -> None:
+    kernel = OmegaKernel()
+    kernel.create_artifact("A-1", "One", "one")
+    kernel.create_artifact("A-2", "Two", "two")
+    kernel.add_artifact_relationship("A-1", "derived_from", "A-2")
+    events = list(kernel.state.events)
+    events.append({"type": "ArtifactRelationshipCreated", "timestamp": "2026-01-01T00:00:00+00:00", "payload": {"relationship": {"source": "A-2", "type": "derived_from", "target": "A-1"}}})
+    fresh = OmegaKernel()
+    with pytest.raises(ValueError, match="cycle"):
+        fresh.replay(events)
