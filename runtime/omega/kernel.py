@@ -161,6 +161,9 @@ class OmegaKernel:
             state.mode = payload["mode"]
         elif event_type == "ArtifactRelationshipCreated":
             relationship = payload["relationship"]
+            if relationship in state.relationships:
+                raise ValueError("Duplicate Artifact relationship event.")
+            OmegaKernel._validate_relationship_graph(state.artifacts, [*state.relationships, relationship])
             state.relationships.append(relationship)
         elif event_type == "ChapterCreated":
             chapter = payload["chapter"]
