@@ -8,7 +8,7 @@ A DNA Capsule is a portable, integrity-checked package of a sovereign World. It 
 
 - Container: UTF-8 JSON
 - Format identifier: `m-ai-self-dna-capsule`
-- Schema version: `1`
+- Schema version: `2` (imports remain compatible with version `1`)
 - Integrity: SHA-256 over canonical JSON excluding the `integrity` member
 
 ## Required members
@@ -17,7 +17,7 @@ A DNA Capsule is a portable, integrity-checked package of a sovereign World. It 
 - `schema_version`: integer schema version
 - `manifest`: World ID, export timestamp, runtime contract, event count and World fingerprint
 - `identity`: ownership and sovereignty metadata
-- `world`: state snapshot including status, mode, Artifacts and Chapters
+- `world`: state snapshot including status, mode, Artifacts, Chapters and relationship edges
 - `events`: ordered event history used for reconstruction
 - `checkpoint`: checkpoint metadata for the exported state
 - `integrity`: algorithm and digest
