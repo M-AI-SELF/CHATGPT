@@ -172,3 +172,50 @@ def test_failed_capsule_import_does_not_mutate_target() -> None:
         target.import_capsule(capsule)
     assert target.state.world_id == "target-world"
     assert target.fingerprint() == before
+
+
+def test_artifact_graph_relationships_and_lineage(tmp_path: Path) -> None:
+    event_log = tmp_path / "events.jsonl"
+    kernel = OmegaKernel(event_log=event_log)
+    kernel.create_artifact("A-ROOT", "Root", "root")
+    kernel.create_artifact("A-MID", "Middle", "middle")
+    kernel.create_artifact("A-LEAF", "Leaf", "leaf")
+    kernel.add_artifact_relationship("A-MID", "derived_from", "A-ROOT")
+    kernel.add_artifact_relationship("A-LEAF", "derived_from", "A-MID")
+    graph = kernel.validate_artifact_graph()
+    assert graph["valid"] is True
+    assert graph["relationship_count"] == 2
+    lineage = kernel.artifact_lineage("A-LEAF")
+    assert lineage["ancestors"] == ["A-MID", "A-ROOT"]
+    restored = OmegaKernel(event_log=event_log)
+    restored.restore_from_event_log()
+    assert restored.state.relationships == kernel.state.relationships
+    assert restored.fingerprint() == kernel.fingerprint()
+
+
+def test_artifact_graph_rejects_dangling_relationship() -> None:
+    kernel = OmegaKernel()
+    kernel.create_artifact("A-1", "One", "one")
+    with pytest.raises(KeyError):
+        kernel.add_artifact_relationship("A-1", "depends_on", "MISSING")
+
+
+def test_artifact_graph_rejects_lineage_cycle() -> None:
+    kernel = OmegaKernel()
+    kernel.create_artifact("A-1", "One", "one")
+    kernel.create_artifact("A-2", "Two", "two")
+    kernel.add_artifact_relationship("A-1", "derived_from", "A-2")
+    with pytest.raises(ValueError, match="cycle"):
+        kernel.add_artifact_relationship("A-2", "derived_from", "A-1")
+
+
+def test_capsule_round_trip_preserves_artifact_graph() -> None:
+    source = OmegaKernel()
+    source.create_artifact("A-ROOT", "Root", "root")
+    source.create_artifact("A-CHILD", "Child", "child")
+    source.add_artifact_relationship("A-CHILD", "derived_from", "A-ROOT")
+    capsule = source.export_capsule()
+    target = OmegaKernel()
+    target.import_capsule(capsule)
+    assert target.state.relationships == source.state.relationships
+    assert target.fingerprint() == source.fingerprint()
