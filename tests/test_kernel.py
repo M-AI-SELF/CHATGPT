@@ -1,4 +1,5 @@
 import json
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -243,3 +244,26 @@ def test_cognitive_diff_includes_relationship_changes() -> None:
     )
     diff = kernel.cognitive_diff(before, after)["cognitive_diff"]
     assert diff["relationships"]["added"] == [{"source": "B", "type": "derived_from", "target": "A"}]
+
+
+def test_capsule_v1_remains_importable() -> None:
+    source = OmegaKernel()
+    source.create_artifact("A-V1", "Legacy", "compatible")
+    capsule = source.export_capsule()
+    legacy_state = {
+        "world_id": source.state.world_id,
+        "status": source.state.status,
+        "mode": source.state.mode,
+        "artifacts": source.state.artifacts,
+        "chapters": source.state.chapters,
+    }
+    legacy_fingerprint = hashlib.sha256(json.dumps(legacy_state, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    capsule["schema_version"] = 1
+    capsule["manifest"]["fingerprint"] = legacy_fingerprint
+    capsule["checkpoint"]["fingerprint"] = legacy_fingerprint
+    capsule["world"].pop("relationships", None)
+    unsigned = {key: value for key, value in capsule.items() if key != "integrity"}
+    capsule["integrity"]["digest"] = hashlib.sha256(json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    target = OmegaKernel()
+    target.import_capsule(capsule)
+    assert target.state.artifacts == source.state.artifacts
