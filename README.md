@@ -223,7 +223,7 @@ See `spec/ARTIFACT_GRAPH_SPECIFICATION.md` and `docs/Ω-0009_ARTIFACT_GRAPH_LINE
 
 ## Ω Command Center :: Dashboard
 
-A local-first, read-only dashboard renders the canonical World from the event log. It includes the World overview, artifact constellation, lineage counts, continuity health, recent Chronicle events and a Capability Registry surface reserved for the Ω-0010 integration.
+A local-first, read-only dashboard renders the canonical World from the event log. It includes the World overview, artifact constellation, lineage counts, continuity health, recent Chronicle events and live Runtime Capability Registry descriptors.
 
 Run it from the repository root:
 
