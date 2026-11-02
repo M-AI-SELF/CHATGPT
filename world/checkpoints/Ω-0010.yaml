@@ -1,0 +1,25 @@
+checkpoint:
+  id: Ω-0010
+  world: omega-world
+  chapter: genesis
+  artifact: Ω-SEED-0001
+  milestone: runtime-capability-registry
+  status: active
+
+verified:
+  capability_descriptor_validation: true
+  provider_scoped_registration: true
+  explicit_replacement: true
+  deterministic_discovery: true
+  permission_matching: true
+  trust_level_matching: true
+  disabled_provider_exclusion: true
+  deterministic_resolution: true
+  runtime_scoped_ephemeral_registry: true
+  adapter_execution: false
+  permission_enforcement: false
+
+next:
+  - define permission-checked capability execution boundary
+  - add capability execution outcome events
+  - expose live capability descriptors to dashboard
