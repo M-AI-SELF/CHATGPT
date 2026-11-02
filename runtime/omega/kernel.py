@@ -16,6 +16,7 @@ class WorldState:
     status: str = "active"
     mode: str = "build"
     artifacts: dict[str, dict[str, Any]] = field(default_factory=dict)
+    chapters: dict[str, dict[str, Any]] = field(default_factory=dict)
     events: list[dict[str, Any]] = field(default_factory=list)
 
 
@@ -70,6 +71,7 @@ class OmegaKernel:
             "status": target.status,
             "mode": target.mode,
             "artifacts": target.artifacts,
+            "chapters": target.chapters,
         }
         payload = json.dumps(canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
@@ -146,9 +148,57 @@ class OmegaKernel:
             state.status = payload["status"]
         elif event_type == "WorldModeChanged":
             state.mode = payload["mode"]
+        elif event_type == "ChapterCreated":
+            chapter = payload["chapter"]
+            state.chapters[chapter["id"]] = chapter
+        elif event_type == "ChapterArtifactAttached":
+            state.chapters[payload["chapter_id"]]["artifacts"].append(payload["artifact_id"])
+        elif event_type == "ChapterChronicleAttached":
+            state.chapters[payload["chapter_id"]]["chronicle"] = payload["chronicle"]
+        elif event_type == "ChapterCheckpointAttached":
+            state.chapters[payload["chapter_id"]]["checkpoints"].append(payload["checkpoint"])
+        elif event_type == "ChapterPublished":
+            state.chapters[payload["chapter_id"]]["status"] = "published"
+            state.chapters[payload["chapter_id"]]["release_notes"] = payload["release_notes"]
         else:
             raise ValueError(f"Unsupported replay event: {event_type}")
 
+    def create_chapter(self, chapter_id: str, title: str, goals: list[str] | None = None) -> dict[str, Any]:
+        if chapter_id in self.state.chapters:
+            raise ValueError(f"Chapter already exists: {chapter_id}")
+        chapter = {"id": chapter_id, "title": title, "goals": list(goals or []), "artifacts": [], "chronicle": None, "checkpoints": [], "release_notes": [], "status": "open"}
+        self.state.chapters[chapter_id] = chapter
+        self.emit("ChapterCreated", {"chapter": chapter})
+        return chapter
+
+    def attach_artifact_to_chapter(self, chapter_id: str, artifact_id: str) -> None:
+        if chapter_id not in self.state.chapters or artifact_id not in self.state.artifacts:
+            raise KeyError("Chapter or Artifact does not exist.")
+        chapter = self.state.chapters[chapter_id]
+        if chapter["status"] != "open":
+            raise ValueError("Artifacts can only be attached to open Chapters.")
+        if artifact_id not in chapter["artifacts"]:
+            chapter["artifacts"].append(artifact_id)
+            self.emit("ChapterArtifactAttached", {"chapter_id": chapter_id, "artifact_id": artifact_id})
+
+    def publish_chapter(self, chapter_id: str, release_notes: list[str] | None = None) -> dict[str, Any]:
+        if chapter_id not in self.state.chapters:
+            raise KeyError(f"Unknown Chapter: {chapter_id}")
+        chapter = self.state.chapters[chapter_id]
+        if chapter["status"] != "open":
+            raise ValueError("Only open Chapters can be published.")
+        chronicle = self.generate_chronicle(f"{chapter['title']} Chronicle")
+        chronicle["related_chapters"] = [chapter_id]
+        chapter["chronicle"] = chronicle
+        self.emit("ChapterChronicleAttached", {"chapter_id": chapter_id, "chronicle": chronicle})
+        snapshot = self.checkpoint()
+        chapter["checkpoints"].append(snapshot)
+        self.emit("ChapterCheckpointAttached", {"chapter_id": chapter_id, "checkpoint": snapshot})
+        notes = list(release_notes or [])
+        self.emit("ChapterPublished", {"chapter_id": chapter_id, "release_notes": notes})
+        chapter["status"] = "published"
+        chapter["release_notes"] = notes
+        return chapter
     def generate_chronicle(self, title: str = "World Evolution") -> dict[str, Any]:
         """Generate a durable chronicle artifact from the current event stream."""
         events = list(self.state.events)
