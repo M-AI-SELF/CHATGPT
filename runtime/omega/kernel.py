@@ -141,7 +141,7 @@ class OmegaKernel:
                 "decisions": [],
                 "goals": [],
                 "relationships": relationship_diff,
-                "semantic_summary": f"{len(added)} added, {len(changed)} changed, {len(removed)} removed",
+                "semantic_summary": f"{len(added)} artifacts added, {len(changed)} changed, {len(removed)} removed; {len(relationship_diff['added'])} relationships added, {len(relationship_diff['removed'])} removed",
                 "next_objective": "inspect changed artifacts" if changed else "continue",
             }
         }
