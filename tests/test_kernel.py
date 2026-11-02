@@ -150,3 +150,25 @@ def test_capsule_rejects_unsupported_schema() -> None:
     target = OmegaKernel()
     with pytest.raises(ValueError, match="schema version"):
         target.import_capsule(capsule)
+
+
+def test_capsule_export_is_detached_from_live_world() -> None:
+    source = OmegaKernel()
+    source.create_artifact("A-DETACH", "Original", "source")
+    capsule = source.export_capsule()
+    capsule["world"]["artifacts"]["A-DETACH"]["content"] = "external mutation"
+    assert source.state.artifacts["A-DETACH"]["content"] == "source"
+
+
+def test_failed_capsule_import_does_not_mutate_target() -> None:
+    source = OmegaKernel()
+    source.create_artifact("A-SOURCE", "Source", "data")
+    capsule = source.export_capsule()
+    capsule["integrity"]["digest"] = "invalid"
+    target = OmegaKernel(world_id="target-world")
+    target.create_artifact("A-LOCAL", "Local", "keep")
+    before = target.fingerprint()
+    with pytest.raises(ValueError, match="integrity"):
+        target.import_capsule(capsule)
+    assert target.state.world_id == "target-world"
+    assert target.fingerprint() == before
