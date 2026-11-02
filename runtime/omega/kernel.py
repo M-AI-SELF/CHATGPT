@@ -257,23 +257,25 @@ class OmegaKernel:
         world_id = manifest.get("world_id")
         if not world_id:
             raise ValueError("Capsule manifest is missing world_id.")
-        self.state = WorldState(world_id=world_id)
-        self.identity = dict(capsule.get("identity", {}))
-        restored = self.replay(capsule.get("events", []))
+        candidate = OmegaKernel(world_id=world_id, identity=dict(capsule.get("identity", {})))
+        restored = candidate.replay(capsule.get("events", []))
         expected = manifest.get("fingerprint")
-        if not expected or self.fingerprint() != expected:
+        if not expected or candidate.fingerprint() != expected:
             raise ValueError("Capsule World fingerprint verification failed.")
         checkpoint = capsule.get("checkpoint", {})
-        if checkpoint.get("fingerprint") != self.fingerprint():
+        if checkpoint.get("fingerprint") != candidate.fingerprint():
             raise ValueError("Capsule checkpoint does not match reconstructed World.")
         world_snapshot = capsule.get("world", {})
-        if world_snapshot.get("artifacts") != self.state.artifacts or world_snapshot.get("chapters") != self.state.chapters:
+        if world_snapshot.get("artifacts") != candidate.state.artifacts or world_snapshot.get("chapters") != candidate.state.chapters:
             raise ValueError("Capsule snapshot does not match replayed event history.")
-        if world_snapshot.get("status") != self.state.status or world_snapshot.get("mode") != self.state.mode:
+        if world_snapshot.get("status") != candidate.state.status or world_snapshot.get("mode") != candidate.state.mode:
             raise ValueError("Capsule World metadata does not match replayed event history.")
-        if manifest.get("event_count") != len(self.state.events):
+        if manifest.get("event_count") != len(candidate.state.events):
             raise ValueError("Capsule event count does not match event history.")
-        return restored
+        # Commit reconstructed state only after every validation gate passes.
+        self.state = candidate.state
+        self.identity = candidate.identity
+        return self.state
     def generate_chronicle(self, title: str = "World Evolution") -> dict[str, Any]:
         """Generate a durable chronicle artifact from the current event stream."""
         events = list(self.state.events)
