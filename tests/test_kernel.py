@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from runtime.omega import OmegaKernel, WorldState
+from runtime.omega import OmegaKernel
+from runtime.omega.kernel import WorldState
 
 
 def test_world_lifecycle() -> None:
@@ -82,3 +83,29 @@ def test_chronicle_generation() -> None:
     assert chronicle["event_count"] == 1
     assert chronicle["timeline"][0]["type"] == "ArtifactCreated"
     assert chronicle["world_fingerprint"] == kernel.fingerprint()
+
+
+def test_chapter_lifecycle_and_replay(tmp_path: Path) -> None:
+    event_log = tmp_path / "events.jsonl"
+    kernel = OmegaKernel(event_log=event_log)
+    kernel.create_artifact("A-CH", "Chapter Artifact", "content")
+    kernel.create_chapter("CH-0001", "Genesis", ["Establish continuity"])
+    kernel.attach_artifact_to_chapter("CH-0001", "A-CH")
+    chapter = kernel.publish_chapter("CH-0001", ["Initial chapter published"])
+    assert chapter["status"] == "published"
+    assert chapter["artifacts"] == ["A-CH"]
+    assert chapter["chronicle"]["related_chapters"] == ["CH-0001"]
+    assert len(chapter["checkpoints"]) == 1
+    restored = OmegaKernel(event_log=event_log)
+    restored.restore_from_event_log()
+    assert restored.state.chapters["CH-0001"] == chapter
+    assert restored.fingerprint() == kernel.fingerprint()
+
+
+def test_published_chapter_is_immutable() -> None:
+    kernel = OmegaKernel()
+    kernel.create_artifact("A-1", "Artifact", "content")
+    kernel.create_chapter("CH-1", "Chapter")
+    kernel.publish_chapter("CH-1")
+    with pytest.raises(ValueError):
+        kernel.attach_artifact_to_chapter("CH-1", "A-1")
