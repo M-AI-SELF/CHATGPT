@@ -21,8 +21,9 @@ class WorldState:
 
 
 class OmegaKernel:
-    def __init__(self, world_id: str = "omega-world", event_log: str | Path | None = None) -> None:
+    def __init__(self, world_id: str = "omega-world", event_log: str | Path | None = None, identity: dict[str, Any] | None = None) -> None:
         self.event_log = Path(event_log) if event_log is not None else None
+        self.identity = dict(identity or {"owner": "user", "sovereignty": True})
         self.state = WorldState(world_id=world_id)
 
     def emit(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -201,6 +202,78 @@ class OmegaKernel:
         chapter["status"] = "published"
         chapter["release_notes"] = notes
         return chapter
+    @staticmethod
+    def _canonical_json(value: dict[str, Any]) -> str:
+        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+    def export_capsule(self, destination: str | Path | None = None) -> dict[str, Any]:
+        """Create a portable, integrity-checked snapshot of this World."""
+        capsule = {
+            "format": "m-ai-self-dna-capsule",
+            "schema_version": 1,
+            "manifest": {
+                "world_id": self.state.world_id,
+                "exported_at": datetime.now(timezone.utc).isoformat(),
+                "runtime_contract": "omega-runtime",
+                "event_count": len(self.state.events),
+                "fingerprint": self.fingerprint(),
+            },
+            "identity": self.identity,
+            "world": {
+                "status": self.state.status,
+                "mode": self.state.mode,
+                "artifacts": self.state.artifacts,
+                "chapters": self.state.chapters,
+            },
+            "events": self.state.events,
+            "checkpoint": self.checkpoint(),
+        }
+        digest = hashlib.sha256(self._canonical_json(capsule).encode("utf-8")).hexdigest()
+        capsule["integrity"] = {"algorithm": "sha256", "digest": digest}
+        if destination is not None:
+            target = Path(destination)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(self._canonical_json(capsule) + "\\n", encoding="utf-8")
+        return capsule
+
+    def import_capsule(self, source: dict[str, Any] | str | Path) -> WorldState:
+        """Validate and restore a capsule into this Runtime instance."""
+        if isinstance(source, (str, Path)):
+            capsule = json.loads(Path(source).read_text(encoding="utf-8"))
+        else:
+            capsule = json.loads(json.dumps(source, ensure_ascii=False))
+        if capsule.get("format") != "m-ai-self-dna-capsule":
+            raise ValueError("Unsupported capsule format.")
+        if capsule.get("schema_version") != 1:
+            raise ValueError("Unsupported capsule schema version.")
+        integrity = capsule.get("integrity", {})
+        if integrity.get("algorithm") != "sha256":
+            raise ValueError("Unsupported capsule integrity algorithm.")
+        unsigned = {key: value for key, value in capsule.items() if key != "integrity"}
+        actual_digest = hashlib.sha256(self._canonical_json(unsigned).encode("utf-8")).hexdigest()
+        if actual_digest != integrity.get("digest"):
+            raise ValueError("Capsule integrity verification failed.")
+        manifest = capsule.get("manifest", {})
+        world_id = manifest.get("world_id")
+        if not world_id:
+            raise ValueError("Capsule manifest is missing world_id.")
+        self.state = WorldState(world_id=world_id)
+        self.identity = dict(capsule.get("identity", {}))
+        restored = self.replay(capsule.get("events", []))
+        expected = manifest.get("fingerprint")
+        if not expected or self.fingerprint() != expected:
+            raise ValueError("Capsule World fingerprint verification failed.")
+        checkpoint = capsule.get("checkpoint", {})
+        if checkpoint.get("fingerprint") != self.fingerprint():
+            raise ValueError("Capsule checkpoint does not match reconstructed World.")
+        world_snapshot = capsule.get("world", {})
+        if world_snapshot.get("artifacts") != self.state.artifacts or world_snapshot.get("chapters") != self.state.chapters:
+            raise ValueError("Capsule snapshot does not match replayed event history.")
+        if world_snapshot.get("status") != self.state.status or world_snapshot.get("mode") != self.state.mode:
+            raise ValueError("Capsule World metadata does not match replayed event history.")
+        if manifest.get("event_count") != len(self.state.events):
+            raise ValueError("Capsule event count does not match event history.")
+        return restored
     def generate_chronicle(self, title: str = "World Evolution") -> dict[str, Any]:
         """Generate a durable chronicle artifact from the current event stream."""
         events = list(self.state.events)
