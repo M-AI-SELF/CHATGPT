@@ -219,3 +219,15 @@ def test_capsule_round_trip_preserves_artifact_graph() -> None:
     target.import_capsule(capsule)
     assert target.state.relationships == source.state.relationships
     assert target.fingerprint() == source.fingerprint()
+
+
+def test_cognitive_diff_includes_relationship_changes() -> None:
+    kernel = OmegaKernel()
+    before = WorldState(world_id="omega-world", artifacts={"A": {"id": "A"}, "B": {"id": "B"}})
+    after = WorldState(
+        world_id="omega-world",
+        artifacts={"A": {"id": "A"}, "B": {"id": "B"}},
+        relationships=[{"source": "B", "type": "derived_from", "target": "A"}],
+    )
+    diff = kernel.cognitive_diff(before, after)["cognitive_diff"]
+    assert diff["relationships"]["added"] == [{"source": "B", "type": "derived_from", "target": "A"}]
