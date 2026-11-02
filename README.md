@@ -234,3 +234,10 @@ python -m runtime.omega.dashboard
 Then open [http://127.0.0.1:8765](http://127.0.0.1:8765). The dashboard polls the overview API every 15 seconds. If the API is not running, the page displays a clearly labelled preview. It does not mutate World state.
 
 See `docs/DASHBOARD_SPECIFICATION.md`.
+
+
+## Ω-0010 :: RUNTIME CAPABILITY REGISTRY
+
+The Runtime now declares provider-independent capabilities and resolves them against requirements using enabled state, permission sets, trust level and deterministic provider ordering. The registry is Runtime-scoped and ephemeral; provider availability is not serialized into the sovereign World or DNA Capsules. The Kernel exposes its built-in replay, graph validation, checkpoint and capsule capabilities to the Command Center.
+
+See `spec/CAPABILITY_REGISTRY_SPECIFICATION.md` and `docs/Ω-0010_CAPABILITY_REGISTRY.md`.
