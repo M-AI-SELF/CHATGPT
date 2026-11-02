@@ -26,7 +26,9 @@ class OmegaKernel:
         self.state = WorldState(world_id=world_id)
 
     def emit(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
-        event = {"type": event_type, "timestamp": datetime.now(timezone.utc).isoformat(), "payload": payload}
+        # Freeze payload at emission time so later in-memory mutations cannot rewrite history.
+        frozen_payload = json.loads(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        event = {"type": event_type, "timestamp": datetime.now(timezone.utc).isoformat(), "payload": frozen_payload}
         self._validate_event(event)
         self.state.events.append(event)
         self._persist_event(event)
