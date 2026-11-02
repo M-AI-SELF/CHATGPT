@@ -231,3 +231,15 @@ def test_cognitive_diff_includes_relationship_changes() -> None:
     )
     diff = kernel.cognitive_diff(before, after)["cognitive_diff"]
     assert diff["relationships"]["added"] == [{"source": "B", "type": "derived_from", "target": "A"}]
+
+
+def test_cognitive_diff_includes_relationship_changes() -> None:
+    kernel = OmegaKernel()
+    before = WorldState(world_id="omega-world", artifacts={"A": {"id": "A"}, "B": {"id": "B"}})
+    after = WorldState(
+        world_id="omega-world",
+        artifacts={"A": {"id": "A"}, "B": {"id": "B"}},
+        relationships=[{"source": "B", "type": "derived_from", "target": "A"}],
+    )
+    diff = kernel.cognitive_diff(before, after)["cognitive_diff"]
+    assert diff["relationships"]["added"] == [{"source": "B", "type": "derived_from", "target": "A"}]
