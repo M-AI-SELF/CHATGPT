@@ -40,3 +40,9 @@ def test_dashboard_reports_corrupt_event_log(tmp_path):
     result = build_overview(log)
     assert result["health"]["event_replay"] == "DEGRADED"
     assert result["error"]
+
+
+def test_dashboard_exposes_kernel_capabilities(tmp_path):
+    result = build_overview(tmp_path / "missing.jsonl")
+    capability_ids = {item["id"] for item in result["capabilities"]}
+    assert {"world.replay", "artifact.graph.validate", "checkpoint.create", "capsule.export", "capsule.import"} <= capability_ids
